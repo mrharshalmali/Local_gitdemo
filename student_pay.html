@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Pay Mess Bill</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #f3faf6;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      width: 320px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    input,
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background: #22c55e;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #16a34a;
+    }
+
+    .upi {
+      font-size: 18px;
+      font-weight: bold;
+      color: #198754;
+    }
+
+    .hint {
+      font-size: 13px;
+      color: #555;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="card">
+    <h3>💳 Pay Monthly Bill</h3>
+
+    <p>Amount: <b id="billAmount">Loading...</b></p>
+
+    <p>Pay to UPI ID:</p>
+    <div class="upi" id="upiText">Loading...</div>
+    <p class="hint">Use GPay / PhonePe / Paytm</p>
+
+    <input type="text" id="txnId" placeholder="Enter Transaction ID">
+
+    <button onclick="submitPayment()">Submit Payment</button>
+
+    <p id="msg"></p>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from
+      "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+
+    import { getAuth, onAuthStateChanged } from
+      "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+
+    import {
+      getFirestore, doc, getDoc,
+      addDoc, collection,
+      query, where, getDocs,
+      Timestamp
+    } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+
+    const app = initializeApp({
+      apiKey: "AIzaSyDkvK-s1RpsmoNjZLPGMnpsqLM_2Cjwiwc",
+      authDomain: "smartmess-66441.firebaseapp.com",
+      projectId: "smartmess-66441"
+    });
+
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let currentUser, studentData, billAmountValue = 0;
+
+    onAuthStateChanged(auth, async user => {
+      if (!user) {
+        location.href = "stu_login.html";
+        return;
+      }
+
+      currentUser = user;
+
+      const stuSnap = await getDoc(doc(db, "students", user.uid));
+      studentData = stuSnap.data();
+
+      // 🔹 Load UPI ID
+      const upiSnap = await getDoc(
+        doc(db, "payment_settings", studentData.messCode)
+      );
+         console.log("Student messCode:", studentData.messCode);
+console.log("UPI Snap exists:", upiSnap.exists());
+console.log("UPI data:", upiSnap.exists() ? upiSnap.data() : "NO DATA");
+
+      if (upiSnap.exists()) {
+        document.getElementById("upiText").innerText =
+          upiSnap.data().upiId;
+      } else {
+        document.getElementById("upiText").innerText =
+          "UPI not set by admin";
+      }
+
+     
+
+     // 🔹 Load bill
+const month = new Date().toISOString().slice(0, 7);
+const billId = `${studentData.messCode}_${month}_${user.uid}`;
+const billSnap = await getDoc(doc(db, "bills", billId));
+
+if (!billSnap.exists()) {
+  document.getElementById("billAmount").innerText =
+    "Bill not generated yet";
+}
+else if (billSnap.data().paymentStatus === "Paid") {
+  document.getElementById("billAmount").innerText =
+    "Bill already paid ✅";
+  document.getElementById("txnId").disabled = true;
+}
+else {
+  billAmountValue = billSnap.data().amount;
+  document.getElementById("billAmount").innerText =
+    "₹ " + billAmountValue;
+}
+
+    });
+
+    window.submitPayment = async () => {
+      const txnId = document.getElementById("txnId").value.trim();
+      if (!txnId) return alert("Enter Transaction ID");
+
+      const month = new Date().toISOString().slice(0, 7);
+      const q = query(
+        collection(db, "payments"),
+        where("uid", "==", currentUser.uid),
+        where("month", "==", month),
+        where("status", "==", "Pending")
+      );
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        alert("Payment already submitted");
+        return;
+      }
+
+
+      await addDoc(collection(db, "payments"), {
+        uid: currentUser.uid,
+        studentName: studentData.fullName,
+        studentEmail: studentData.email,
+        messCode: studentData.messCode,
+        month,
+        amount: billAmountValue,
+        transactionId: txnId,
+        status: "Pending",
+        createdAt: Timestamp.now()
+      });
+
+      document.getElementById("msg").innerText =
+        "Payment submitted ✅ Waiting for verification";
+    };
+  </script>
+
+</body>
+
+</html>

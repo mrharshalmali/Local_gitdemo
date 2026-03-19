@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Registration | Smart Mess</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px 15px;
+            background: #f3faf6;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 430px;
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 18px;
+            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Icon */
+        .icon {
+            width: 70px;
+            height: 70px;
+            background: #dcfce7;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 15px;
+            color: #22c55e;
+        }
+
+        h2 {
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            margin-top: 12px;
+            margin-bottom: 5px;
+        }
+
+        input {
+            width: 100%;
+            height: 42px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
+            font-size: 14px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border: 2px solid #2563EB;
+            box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+        }
+
+        button {
+            width: 100%;
+            height: 45px;
+            margin-top: 22px;
+            border: none;
+            border-radius: 12px;
+            background: #2563EB;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        button:hover {
+            opacity: 0.95;
+        }
+
+        .login-text {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .login-text a {
+            color: #2563EB;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .login-text a:hover {
+            text-decoration: underline;
+        }
+
+        .icon-circle {
+            width: 80px;
+            height: 80px;
+            background-color: #DBEAFE;
+            /* light blue */
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 15px;
+            /* 👈 CENTER FIX */
+        }
+
+
+        .admin-icon {
+            width: 40px;
+            height: 40px;
+            color: #2563EB;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="card">
+
+        <div class="icon-circle">
+            <svg class="admin-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#2563EB"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+
+
+                <circle cx="12" cy="8" r="4" />
+
+
+                <path d="M6 20v-1a6 6 0 0 1 12 0v1" />
+
+
+                <path d="M19 8v4" />
+                <path d="M17 10h4" />
+            </svg>
+        </div>
+
+
+
+        <h2>Admin Registration</h2>
+        <p class="subtitle">Create mess owner account</p>
+
+        <form id="adminRegisterForm">
+            <label>Username</label>
+            <input type="text" id="username" placeholder="username" required>
+
+            <label>Mess Name</label>
+            <input type="text" id="messName" placeholder="Enter mess name" required>
+
+            <label>Email Address</label>
+            <input type="email" id="email" placeholder="Email" required>
+
+            <label>Phone Number</label>
+            <input type="tel" id="phone" placeholder="Enter phone number" required>
+
+            <label>Password</label>
+            <input type="password" id="password" placeholder="Create password" required>
+
+            <button type="submit">Register Mess</button>
+        </form>
+
+        <p class="login-text">
+            Already have an account?
+            <a href="admin_login.html">Login here</a>
+        </p>
+
+    </div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword }
+            from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc }
+            from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+
+        window.addEventListener("pageshow", () => {
+            const form = document.getElementById("adminRegisterForm");
+            if (form) form.reset();
+        });
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDkvK-s1RpsmoNjZLPGMnpsqLM_2Cjwiwc",
+            authDomain: "smartmess-66441.firebaseapp.com",
+            projectId: "smartmess-66441",
+            storageBucket: "smartmess-66441.firebasestorage.app",
+            messagingSenderId: "631180435734",
+            appId: "1:631180435734:web:39036217b263a05ad73037"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // 🔹 Mess Code generate function
+        function generateMessCode() {
+            return "SM-" + Math.floor(1000 + Math.random() * 9000);
+        }
+
+        // 🔹 Form submit handler
+        document.getElementById("adminRegisterForm")
+            .addEventListener("submit", async (e) => {
+                e.preventDefault();
+
+                const username = document.getElementById("username").value;
+                const messName = document.getElementById("messName").value;
+                const email = document.getElementById("email").value;
+                const phone = document.getElementById("phone").value;
+                const password = document.getElementById("password").value;
+
+                try {
+                    // 1️ Firebase Auth
+                    const userCred = await createUserWithEmailAndPassword(
+                        auth,
+                        email,
+                        password
+                    );
+
+                    const adminId = userCred.user.uid;
+                    const messCode = generateMessCode();
+
+                    // 2️ Save Admin
+                    await setDoc(doc(db, "admins", adminId), {
+                        username,
+                        email,
+                        phone,
+                        messCode
+                    });
+
+                    // 3️ Save Mess
+                    await setDoc(doc(db, "messes", messCode), {
+                        messName,
+                        ownerId: adminId
+                    });
+
+                    alert("Admin Registered Successfully \nMess Code: " + messCode);
+
+                    document.getElementById("adminRegisterForm").reset();
+
+                    // window.location.href = "admin_login.html";
+                    window.location.reload();
+
+
+                } catch (error) {
+                    alert(error.message);
+                }
+            });
+    </script>
+
+
+</body>
+
+</html>

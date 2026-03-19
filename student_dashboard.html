@@ -1,0 +1,469 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Student Dashboard | Smart Mess</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body { background:#f3faf6; }
+    .card { border-radius: 12px; }
+  </style>
+</head>
+
+<body>
+
+<div class="container mt-4">
+
+  <h2>Student Dashboard 🎓</h2>
+
+ 
+  <button class="btn btn-danger mb-3" id="logoutBtn">Logout</button>
+
+  <p class="text-muted">Today’s Mess Menu</p>
+
+
+  <div class="card shadow p-4 mt-3">
+    <h4 class="mb-3">🍽️ Today Menu</h4>
+
+    <p><strong>Lunch:</strong></p>
+    <p id="lunchMenu" class="text-success">Loading...</p>
+
+    <p class="mt-3"><strong>Dinner:</strong></p>
+    <p id="dinnerMenu" class="text-success">Loading...</p>
+  </div>
+
+  <div class="card shadow p-4 mt-4">
+    <h4 class="mb-3">📝 Mark Attendance</h4>
+
+    <div id="plateOptions" style="display:none;">
+      <label class="me-3">
+        <input type="radio" name="plate" value="half"> Half Plate
+      </label>
+      <label>
+        <input type="radio" name="plate" value="full" checked> Full Plate
+      </label>
+    </div>
+
+    <div class="mt-2">
+      <label class="me-3">
+        <input type="radio" name="meal" value="lunch" checked> Lunch
+      </label>
+      <label>
+        <input type="radio" name="meal" value="dinner"> Dinner
+      </label>
+    </div>
+
+    <div id="fullOnly" style="display:none;">
+      <p><strong>Plate:</strong> Full Plate</p>
+    </div>
+
+    <button class="btn btn-success mt-3" id="markAttendanceBtn">
+      Mark Attendance 
+    </button>
+  </div>
+<div >
+  <a href="stud_bill_view.html" class="btn btn-outline-success position-fixed top-0 end-0 m-3">
+    💳 View My Bill
+  </a>
+</div>
+</div>
+
+
+
+<script type="module">
+
+/* 🔥 FIREBASE IMPORTS */
+import { initializeApp } from
+"https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+
+import {
+  getAuth, onAuthStateChanged, signOut
+} from
+"https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+
+import {
+  getFirestore, doc, getDoc, setDoc, Timestamp
+} from
+"https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDkvK-s1RpsmoNjZLPGMnpsqLM_2Cjwiwc",
+  authDomain: "smartmess-66441.firebaseapp.com",
+  projectId: "smartmess-66441",
+  storageBucket: "smartmess-66441.firebasestorage.app",
+  messagingSenderId: "631180435734",
+  appId: "1:631180435734:web:39036217b263a05ad73037"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+
+function getTodayDateIST() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+const today = getTodayDateIST();
+
+let halfPlateEnabled = false;
+let messCodeGlobal = "";
+
+
+function isMealTimeAllowed(mealType) {
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  let start = 0, end = 0;
+
+  if (mealType === "lunch") {
+    start = 12 * 60; // 12:00 PM
+    end   = 15 * 60; // 3:00 PM
+  }
+
+  if (mealType === "dinner") {
+    start = 19 * 60; // 7:00 PM
+    end   = 23 * 60; // 10:00 PM
+  }
+
+  return currentMinutes >= start && currentMinutes <= end;
+}
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    window.location.href = "stu_login.html";
+    return;
+  }
+
+  const studentSnap = await getDoc(doc(db, "students", user.uid));
+  if (!studentSnap.exists()) {
+    alert("Student record not found");
+    return;
+  }
+
+  messCodeGlobal = studentSnap.data().messCode;
+
+  const menuSnap = await getDoc(doc(db, "menus", messCodeGlobal + "_" + today));
+  if (menuSnap.exists()) {
+    lunchMenu.innerText = menuSnap.data().lunch;
+    dinnerMenu.innerText = menuSnap.data().dinner;
+  } else {
+    lunchMenu.innerText = "Menu not updated yet";
+    dinnerMenu.innerText = "Menu not updated yet";
+  }
+
+  const messSnap = await getDoc(doc(db, "messes", messCodeGlobal));
+  if (messSnap.exists()) {
+    halfPlateEnabled = messSnap.data().halfPlateEnabled;
+  }
+
+  if (halfPlateEnabled) {
+    plateOptions.style.display = "block";
+  } else {
+    fullOnly.style.display = "block";
+  }
+});
+
+
+markAttendanceBtn.addEventListener("click", async () => {
+
+  const mealType =
+    document.querySelector('input[name="meal"]:checked').value;
+
+  if (!isMealTimeAllowed(mealType)) {
+    alert(`${mealType.toUpperCase()} attendance is allowed only at fixed time`);
+    return;
+  }
+
+  let plateType = "full";
+  if (halfPlateEnabled) {
+    const selected = document.querySelector('input[name="plate"]:checked');
+    if (selected) plateType = selected.value;
+  }
+
+  const uid = auth.currentUser.uid;
+  const docId = messCodeGlobal + "_" + today + "_" + uid + "_" + mealType;
+  const attendanceRef = doc(db, "attendance", docId);
+
+  const existingSnap = await getDoc(attendanceRef);
+  if (existingSnap.exists()) {
+    alert("Attendance already marked for this meal");
+    return;
+  }
+
+  await setDoc(attendanceRef, {
+    uid,
+    messCode: messCodeGlobal,
+    date: today,
+    mealType,
+    plateType,
+    createdAt: Timestamp.now()
+  });
+
+  alert("Attendance saved successfully ");
+});
+
+
+logoutBtn.addEventListener("click", async () => {
+  await signOut(auth);
+  window.location.href = "stu_login.html";
+});
+
+</script>
+
+</body>
+</html> -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Student Dashboard | Smart Mess</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body { background:#f3faf6; }
+    .card { border-radius: 12px; }
+  </style>
+</head>
+
+<body>
+
+<div class="container mt-4">
+
+  <h2>Student Dashboard 🎓</h2>
+
+  <button class="btn btn-danger mb-3" id="logoutBtn">Logout</button>
+  <button class="btn btn-danger mb-3 ms-2" id="leaveBtn">
+   Leave Mess
+</button>
+
+
+  <p class="text-muted">Today’s Mess Menu</p>
+
+  <!-- MENU -->
+  <div class="card shadow p-4 mt-3">
+    <h4>🍽️ Today Menu</h4>
+
+    <p><strong>Lunch:</strong></p>
+    <p id="lunchMenu" class="text-success">Loading...</p>
+
+    <p><strong>Dinner:</strong></p>
+    <p id="dinnerMenu" class="text-success">Loading...</p>
+  </div>
+
+  <!-- ATTENDANCE -->
+  <div class="card shadow p-4 mt-4">
+    <h4>📝 Mark Attendance</h4>
+
+    <div id="plateOptions" style="display:none;">
+      <label class="me-3">
+        <input type="radio" name="plate" value="half"> Half Plate
+      </label>
+      <label>
+        <input type="radio" name="plate" value="full" checked> Full Plate
+      </label>
+    </div>
+
+    <div class="mt-2">
+      <label class="me-3">
+        <input type="radio" name="meal" value="lunch" checked> Lunch
+      </label>
+      <label>
+        <input type="radio" name="meal" value="dinner"> Dinner
+      </label>
+    </div>
+
+    <div id="fullOnly" style="display:none;">
+      <p><strong>Plate:</strong> Full Plate</p>
+    </div>
+
+    <button class="btn btn-success mt-3" id="markAttendanceBtn">
+      Mark Attendance
+    </button>
+  </div>
+
+  <!-- ATTENDANCE HISTORY BUTTON -->
+<div class="mt-3">
+  <a href="stud_atten_his.html"
+     class="btn btn-outline-success w-100">
+    📅 My Attendance History
+  </a>
+</div>
+
+
+  <!-- BILL LINK -->
+  <a href="stud_bill_view.html"
+     class="btn btn-outline-success position-fixed top-0 end-0 m-3">
+    💳 View My Bill
+  </a>
+
+</div>
+
+<script type="module">
+
+/* FIREBASE */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+import { getAuth,onAuthStateChanged,signOut,deleteUser } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, deleteDoc, Timestamp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDkvK-s1RpsmoNjZLPGMnpsqLM_2Cjwiwc",
+  authDomain: "smartmess-66441.firebaseapp.com",
+  projectId: "smartmess-66441"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+/* DATE */
+function todayDate(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+const today = todayDate();
+
+let messCode = "";
+let halfPlateEnabled = false;
+let studentData = null;
+
+/* MEAL TIME */
+function isMealTimeAllowed(meal){
+  const m = new Date().getHours()*60 + new Date().getMinutes();
+  // if(meal==="lunch") return m>=720 && m<=900;
+  // if(meal==="dinner") return m>=1140 && m<=900;
+   if(meal === "lunch")  return m >= 720 && m <= 900;   // 12:00–3:00
+  if(meal === "dinner") return m >= 1140 && m <= 1380; // 7:00–11:00
+  return false;
+}
+
+/* AUTH */
+onAuthStateChanged(auth, async user=>{
+  if(!user){ location.href="stu_login.html"; return; }
+
+  const snap = await getDoc(doc(db,"students",user.uid));
+  if(!snap.exists()){ alert("Student record not found"); return; }
+
+  studentData = snap.data();
+  messCode = studentData.messCode;
+
+  // 🔐 Block if student left mess
+
+
+
+  const menuSnap = await getDoc(doc(db,"menus",messCode+"_"+today));
+  lunchMenu.innerText = menuSnap.exists()?menuSnap.data().lunch:"Menu not updated";
+  dinnerMenu.innerText = menuSnap.exists()?menuSnap.data().dinner:"Menu not updated";
+
+  const messSnap = await getDoc(doc(db,"messes",messCode));
+  if(messSnap.exists()) halfPlateEnabled = messSnap.data().halfPlateEnabled;
+
+  if(halfPlateEnabled) plateOptions.style.display="block";
+  else fullOnly.style.display="block";
+});
+
+/* SAVE ATTENDANCE */
+markAttendanceBtn.addEventListener("click", async()=>{
+
+  const mealType = document.querySelector('input[name="meal"]:checked').value;
+  if(!isMealTimeAllowed(mealType)){
+    alert("Attendance not allowed at this time");
+    return;
+  }
+
+  let plateType="full";
+  if(halfPlateEnabled){
+    plateType=document.querySelector('input[name="plate"]:checked')?.value||"full";
+  }
+
+  const uid = auth.currentUser.uid;
+  const docId = `${messCode}_${today}_${uid}_${mealType}`;
+  const ref = doc(db,"attendance",docId);
+
+  if((await getDoc(ref)).exists()){
+    alert("Attendance already marked");
+    return;
+  }
+
+  await setDoc(ref,{
+    uid,
+    studentName: studentData.fullName,
+    studentEmail: studentData.email,
+    messCode,
+    date: today,
+    mealType,
+    plateType,
+    createdAt: Timestamp.now()
+  });
+
+  alert("Attendance marked successfully ✅");
+});
+
+/* LOGOUT */
+// logoutBtn.addEventListener("click",async()=>{
+//   await signOut(auth);
+//   location.href="stu_login.html";
+// });
+
+/* LOGOUT */
+logoutBtn.addEventListener("click", async () => {
+  const ok = confirm("Are you sure you want to logout?");
+  if (!ok) return;
+
+  try {
+    await signOut(auth);
+
+    // session clean
+    localStorage.clear();
+    sessionStorage.clear();
+    // location.href = "stu_login.html";
+    location.href = "index.html";
+  } catch (err) {
+    alert("Logout failed: " + err.message);
+  }
+});
+
+/* LEAVE MESS */
+const leaveBtn = document.getElementById("leaveBtn");
+
+leaveBtn.addEventListener("click", async () => {
+
+  const confirmLeave = confirm("Are you sure you want to permanently delete your account?");
+  if (!confirmLeave) return;
+
+  try {
+    const user = auth.currentUser;
+    const uid = user.uid;
+
+    // 1️⃣ Delete Firestore document first
+    await deleteDoc(doc(db, "students", uid));
+
+    // 2️⃣ Then delete Authentication
+    await deleteUser(user);
+
+    alert("Your account has been permanently deleted.");
+    window.location.href = "stu_login.html";
+    // location.replace("stu_login.html");
+
+  } catch (error) {
+    if (error.code === "auth/requires-recent-login") {
+      alert("Please logout and login again before deleting account.");
+    } else {
+      alert("Error: " + error.message);
+    }
+  }
+
+});
+
+
+</script>
+
+</body>
+</html>
+

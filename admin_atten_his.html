@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Attendance History | Smart Mess</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body { background:#f3faf6; }
+    .card { border-radius:12px; }
+  </style>
+</head>
+
+<body>
+
+<div class="container mt-4">
+
+  <h3>📊 Admin Attendance History</h3>
+  <p class="text-muted">Month-wise attendance of all students</p>
+
+  <!-- MONTH PICKER -->
+  <div class="mb-3">
+    <label class="form-label">📅 Select Month</label>
+    <input type="month" id="monthPicker" class="form-control">
+  </div>
+
+  <div class="card shadow p-4">
+    <table class="table table-bordered text-center">
+      <thead class="table-light">
+        <tr>
+            <th>Date</th>
+            <th>Student Name</th>
+            <th>Email</th>
+            <th>Lunch</th>
+            <th>Dinner</th>
+            <th>Plate</th>
+            <th>Time</th>
+        </tr>
+      </thead>
+
+      <tbody id="attendanceTable">
+        <tr>
+          <td colspan="6">Loading...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script type="module">
+
+import { initializeApp } from
+"https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+
+import {
+  getAuth, onAuthStateChanged
+} from
+"https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+
+import {
+  getFirestore,
+  collection, query, where, getDocs, orderBy,
+  doc, getDoc
+} from
+"https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+
+/* FIREBASE CONFIG */
+const firebaseConfig = {
+  apiKey:"AIzaSyDkvK-s1RpsmoNjZLPGMnpsqLM_2Cjwiwc",
+  authDomain:"smartmess-66441.firebaseapp.com",
+  projectId:"smartmess-66441"
+};
+
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+/* AUTH CHECK */
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    window.location.href = "admin_login.html";
+    return;
+  }
+
+    // ✅ ADMIN VERIFY + MESS CODE
+  const adminSnap = await getDoc(doc(db, "admins", user.uid));
+  if (!adminSnap.exists()) {
+    alert("Not Admin");
+    return;
+  }
+
+  const ADMIN_MESS = adminSnap.data().messCode;
+
+
+  const monthPicker = document.getElementById("monthPicker");
+  const table = document.getElementById("attendanceTable");
+
+  // default current month
+  const now = new Date();
+  monthPicker.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+async function loadAdminAttendance() {
+  table.innerHTML = "";
+
+  const selectedMonth = monthPicker.value;
+
+  const q = query(
+    collection(db, "attendance"),
+    where("messCode", "==", ADMIN_MESS),
+    orderBy("createdAt", "desc")
+  );
+
+  const snap = await getDocs(q);
+
+  const map = {}; // key = date_uid
+
+  // 1️⃣ COLLECT DATA
+  snap.forEach(docSnap => {
+    const d = docSnap.data();
+
+    if (!d.date.startsWith(selectedMonth)) return;
+
+    const key = d.date + "_" + d.uid;
+
+    if (!map[key]) {
+      map[key] = {
+        date: d.date,
+        name: d.studentName || "-",
+        email: d.studentEmail || "-",
+        lunch: false,
+        dinner: false,
+       lunchPlate: "-",
+       lunchTime: "-",
+       dinnerPlate: "-",
+       dinnerTime: "-"
+
+      };
+    }
+
+    if (d.mealType === "lunch") map[key].lunch = true;
+    if (d.mealType === "dinner") map[key].dinner = true;
+
+    const time = d.createdAt?.toDate().toLocaleTimeString() || "-";
+
+if (d.mealType === "lunch") {
+  map[key].lunch = true;
+  map[key].lunchPlate = d.plateType;
+  map[key].lunchTime = time;
+}
+
+if (d.mealType === "dinner") {
+  map[key].dinner = true;
+  map[key].dinnerPlate = d.plateType;
+  map[key].dinnerTime = time;
+}
+
+  });
+
+  // 2️⃣ NO DATA
+  if (Object.keys(map).length === 0) {
+    table.innerHTML = `
+      <tr>
+        <td colspan="7">No attendance found</td>
+      </tr>
+    `;
+    return;
+  }
+
+  // 3️⃣ RENDER TABLE
+  Object.values(map).forEach(d => {
+    table.innerHTML += `
+      <tr>
+        <td>${d.date}</td>
+        <td>${d.name}</td>
+        <td>${d.email}</td>
+
+        <td>${d.lunch ? "✅" : "❌"}</td>
+        <td>${d.dinner ? "✅" : "❌"}</td>
+
+       <td>
+             ${d.lunchPlate}<br>
+             ${d.dinnerPlate}
+        </td>
+
+        <td>
+          ${d.lunchTime}<br>
+           ${d.dinnerTime}
+        </td>
+
+      </tr>
+    `;
+  });
+}
+
+
+ loadAdminAttendance();
+monthPicker.addEventListener("change", loadAdminAttendance);
+
+});
+
+</script>
+
+</body>
+</html>

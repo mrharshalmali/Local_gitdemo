@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin Dashboard | Smart Mess</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body{background:#f3faf6}
+.sidebar{height:100vh;background:#198754;color:#fff;position:fixed;width:240px}
+.sidebar a{color:#fff;text-decoration:none;padding:12px 20px;display:block;cursor:pointer}
+.sidebar a:hover{background:#157347}
+.content{margin-left:240px;padding:20px}
+.card{border-radius:12px}
+.section{display:none}
+.section.active{display:block}
+
+
+#upi input{
+  width:50%;
+  margin:10px auto;
+  border:2px solid #198754;
+}
+
+#upi button{
+  display:block;
+  margin:20px auto;
+}
+
+
+</style>
+</head>
+
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <h4 class="text-center py-3 border-bottom">Smart Mess</h4>
+  <a onclick="showSection('dashboard')">📊 Dashboard</a>
+  <a onclick="showSection('menu')">📖 Menu</a>
+  <a onclick="showSection('attendance')">📋 Attendance</a>
+  <a href="admin_atten_his.html"> 📊 Attendance History</a>
+  <a onclick="showSection('billing')">💰 Billing</a>
+  <a onclick="showSection('messages')">📞 Messages</a>
+  <a onclick="showSection('upi')">💳 UPI Settings</a>
+  <a onclick="closeMess()">🟥 Close Mess Permanently</a>
+  <a onclick="logout()">🚪 Logout</a>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="section active">
+<h2>Admin Dashboard</h2>
+<div class="row mt-4">
+  <div class="col-md-3">
+    <div class="card p-3 shadow">
+      <h6>Total Students</h6>
+      <h3 id="totalStudents">—</h3>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 shadow">
+      <h6>Today Attendance</h6>
+      <h3 id="todayCount">—</h3>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+  <div class="card p-3 shadow">
+    <h6>Monthly Collection</h6>
+    <h3 id="dashboardMonthlyCollection">₹ —</h3>
+  </div>
+</div>
+
+</div>
+</div>
+
+
+<!-- MENU -->
+<div id="menu" class="section">
+<h3>Menu Management</h3>
+<input type="date" id="menuDate" class="form-control mb-2">
+<textarea id="lunchMenu" class="form-control mb-2" placeholder="Lunch Menu"></textarea>
+<textarea id="dinnerMenu" class="form-control mb-2" placeholder="Dinner Menu"></textarea>
+<button class="btn btn-success" onclick="saveMenu()">Save Menu</button>
+</div>
+
+<!-- ATTENDANCE -->
+<div id="attendance" class="section">
+<h3>📅 Today Attendance</h3>
+
+<input type="date" id="attendanceDate"
+       class="form-control w-25 mb-3">
+
+<button class="btn btn-primary mb-3"
+        onclick="loadAttendanceByDate()">
+  View Attendance
+</button>
+
+<table class="table table-bordered text-center">
+<thead>
+<tr>
+<th>Name</th>
+<th>Email</th>
+<th>Meal</th>
+<th>Plate</th>
+<th>Time</th>
+</tr>
+</thead>
+<tbody id="todayTable"></tbody>
+</table>
+</div>
+
+<!-- BILLING -->
+<div id="billing" class="section">
+<h3>💰 Billing Settings</h3>
+
+<div class="row mb-3">
+  <div class="col-md-3"><input type="number" id="lunchFull" class="form-control" placeholder="Lunch Full Price"></div>
+  <div class="col-md-3"><input type="number" id="lunchHalf" class="form-control" placeholder="Lunch Half Price"></div>
+  <div class="col-md-3"><input type="number" id="dinnerFull" class="form-control" placeholder="Dinner Full Price"></div>
+  <div class="col-md-3"><input type="number" id="dinnerHalf" class="form-control" placeholder="Dinner Half Price"></div>
+</div>
+
+<button class="btn btn-success mb-4" onclick="saveBillingSettings()">💾 Save Prices</button>
+
+<!-- 🔥 MONTHLY COLLECTION CARD -->
+<div class="card p-3 mb-3 shadow">
+  <h5>
+    📊 Monthly Collection:
+    <span class="text-success" id="monthlyCollection">₹ 0</span>
+  </h5>
+</div>
+
+
+<h4>📅 Generate Monthly Bills</h4>
+<input type="month" id="billMonth" class="form-control w-25 mb-3">
+<button class="btn btn-primary mb-3" onclick="generateBills()">Generate Bills</button>
+
+<table class="table table-bordered text-center">
+<thead class="table-light">
+<tr>
+  <th>Name</th>
+  <th>Email</th>
+  <th>Amount</th>
+  <th>Status</th>
+  <th>Action</th>
+</tr>
+</thead>
+<tbody id="billTable"></tbody>
+</table>
+
+<hr>
+
+<h4>💳 Pending Payments (Txn ID)</h4>
+
+<table class="table table-bordered text-center">
+  <thead class="table-light">
+    <tr>
+      <th>Name</th>
+      <th>Month</th>
+      <th>Amount</th>
+      <th>Txn ID</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody id="paymentTable">
+    <tr><td colspan="5">Loading...</td></tr>
+  </tbody>
+</table>
+
+
+</div>
+
+
+<div id="upi" class="section">
+  <h3 class="text-center mb-4">💳 UPI Payment Settings</h3>
+
+  <input type="text"
+         id="upiId"
+         class="form-control mb-2 w-50 mx-auto"
+         placeholder="Enter UPI ID (example: smartmess@upi)">
+
+  <button class="btn btn-success d-block mx-auto"
+          onclick="saveUPI()">
+    Save UPI Details
+  </button>
+</div>
+
+<!-- <div id="messages" class="section">
+  <h3> Student Messages</h3>
+  <div id="messageList"></div>
+</div> -->
+
+<div id="messages" class="section">
+  <h3>📞 Student Messages</h3>
+
+  <!-- 🔍 FILTER UI -->
+  <div class="card p-3 mb-3 shadow">
+    <h5>🔍 Filter Messages</h5>
+
+    <input type="month" id="filterMonth" class="form-control mb-2">
+    <input type="date" id="filterDate" class="form-control mb-2">
+
+    <button class="btn btn-primary w-100" onclick="filterMessages()">
+      Apply Filter
+    </button>
+  </div>
+
+  <!-- 📩 Messages -->
+  <div id="messageList"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+import { getAuth,onAuthStateChanged,signOut,deleteUser } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+// import { getFirestore,collection,query,where,getDocs,doc,getDoc,setDoc } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+import {
+  getFirestore,collection,query,where,getDocs,
+  doc,getDoc,setDoc,updateDoc,deleteDoc
+} from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+
+
+/* FIREBASE */
+const app = initializeApp({
+  apiKey:"AIzaSyDkvK-s1RpsmoNjZLPGMnpsqLM_2Cjwiwc",
+  authDomain:"smartmess-66441.firebaseapp.com",
+  projectId:"smartmess-66441"
+});
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let ADMIN_MESS = "";
+
+const upiId = document.getElementById("upiId");
+
+
+/* NAV */
+window.showSection = id => {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+
+  if (id === "messages") {
+    loadMessages();
+  }
+};
+/* AUTH */
+onAuthStateChanged(auth, async user => {
+  if(!user){
+    location.href="admin_login.html";
+    return;
+  }
+
+  const snap = await getDoc(doc(db,"admins",user.uid));
+  if(!snap.exists()){
+    alert("This account has been deleted.");
+    // await deleteUser(user); 
+    await signOut(auth); 
+    location.replace("index.html"); 
+    return;
+  }
+
+  ADMIN_MESS = snap.data().messCode;
+
+  // 🔄 AUTO LOAD UPI DETAILS
+const upiSnap = await getDoc(doc(db, "payment_settings", ADMIN_MESS));
+if (upiSnap.exists()) {
+  upiId.value = upiSnap.data().upiId || "";
+}
+
+
+
+  loadTotalStudents();
+  loadTodayAttendance();
+  loadPendingPayments();
+
+  const currentMonth = new Date().toISOString().slice(0,7);
+calculateMonthlyCollection(currentMonth);
+
+
+});
+
+/* TOTAL STUDENTS */
+async function loadTotalStudents(){
+  const q = query(collection(db,"students"), where("messCode","==",ADMIN_MESS));
+  const snap = await getDocs(q);
+  totalStudents.innerText = snap.size;
+}
+
+/* TODAY DATE */
+function today(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+//payment
+async function loadPendingPayments(){
+  const q = query(
+    collection(db,"payments"),
+    where("messCode","==",ADMIN_MESS),
+    where("status","==","Pending")
+  );
+
+  const snap = await getDocs(q);
+  paymentTable.innerHTML = "";
+
+  if(snap.empty){
+    paymentTable.innerHTML =
+      `<tr><td colspan="5">No pending payments</td></tr>`;
+    return;
+  }
+
+  snap.forEach(d=>{
+    const p = d.data();
+    const billId = `${p.messCode}_${p.month}_${p.uid}`;
+
+    paymentTable.innerHTML += `
+      <tr>
+        <td>${p.studentName}</td>
+        <td>${p.month}</td>
+        <td>₹ ${p.amount}</td>
+        <td>${p.transactionId}</td>
+        <td>
+          <button class="btn btn-sm btn-success"
+            onclick="verifyPayment('${d.id}','${billId}')">
+            Verify
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+/* VERIFY PAYMENT */
+window.verifyPayment = async (paymentId, billId)=>{
+  const ok = confirm("Verify this payment?");
+  if(!ok) return;
+
+  // 1️⃣ Update payment status
+  await updateDoc(doc(db,"payments",paymentId),{
+    status: "Paid",
+    verifiedAt: new Date()
+  });
+
+  // 2️⃣ Update bill status
+  await updateDoc(doc(db,"bills",billId),{
+    paymentStatus: "Paid",
+    paidAt: new Date()
+  });
+
+  alert("Payment verified ✅");
+
+  loadPendingPayments();
+  generateBills();
+};
+
+
+
+/* TODAY ATTENDANCE */
+async function loadTodayAttendance(){
+  const q = query(
+    collection(db,"attendance"),
+    where("messCode","==",ADMIN_MESS),
+    where("date","==",today())
+  );
+
+  const snap = await getDocs(q);
+  todayCount.innerText = snap.size;
+  todayTable.innerHTML = "";
+
+    if (snap.empty) {
+    todayTable.innerHTML =
+      `<tr><td colspan="5">No attendance today</td></tr>`;
+    return;
+  }
+
+
+  snap.forEach(d=>{
+    const a=d.data();
+    todayTable.innerHTML+=`
+    <tr>
+      <td>${a.studentName || "-"}</td>
+      <td>${a.studentEmail || "-"}</td>
+      <td>${a.mealType}</td>
+      <td>${a.plateType}</td>
+      <td>${a.createdAt?.toDate().toLocaleTimeString()}</td>
+    </tr>`;
+  });
+}
+window.loadAttendanceByDate = async () => {
+  const selectedDate = document.getElementById("attendanceDate").value;
+
+  if (!selectedDate) {
+    alert("Select date");
+    return;
+  }
+
+  const q = query(
+    collection(db, "attendance"),
+    where("messCode", "==", ADMIN_MESS),
+    where("date", "==", selectedDate)
+  );
+
+  const snap = await getDocs(q);
+  todayTable.innerHTML = "";
+
+  if (snap.empty) {
+    todayTable.innerHTML =
+      `<tr><td colspan="5">No attendance on this date</td></tr>`;
+    return;
+  }
+
+  snap.forEach(d => {
+    const a = d.data();
+    todayTable.innerHTML += `
+      <tr>
+        <td>${a.studentName || "-"}</td>
+        <td>${a.studentEmail || "-"}</td>
+        <td>${a.mealType}</td>
+        <td>${a.plateType}</td>
+        <td>${a.createdAt?.toDate().toLocaleTimeString()}</td>
+      </tr>
+    `;
+  });
+};
+
+
+/* SAVE MENU */
+window.saveMenu = async () => {
+  if(!menuDate.value) return alert("Select date");
+
+  await setDoc(doc(db,"menus",ADMIN_MESS+"_"+menuDate.value),{
+    messCode:ADMIN_MESS,
+    date:menuDate.value,
+    lunch:lunchMenu.value,
+    dinner:dinnerMenu.value,
+    updatedAt:new Date()
+  });
+
+  alert("Menu saved ✅");
+};
+
+/* SAVE BILLING */
+window.saveBillingSettings = async () => {
+  await setDoc(doc(db,"billing_settings",ADMIN_MESS),{
+    messCode:ADMIN_MESS,
+    lunchFull:Number(lunchFull.value),
+    lunchHalf:Number(lunchHalf.value),
+    dinnerFull:Number(dinnerFull.value),
+    dinnerHalf:Number(dinnerHalf.value),
+    updatedAt:new Date()
+  });
+  alert("Billing saved ✅");
+};
+// 💳 SAVE UPI SETTINGS
+window.saveUPI = async () => {
+  if (!upiId.value) {
+    alert("UPI ID required");
+    return;
+  }
+
+ await setDoc(
+  doc(db, "payment_settings", ADMIN_MESS),
+  {
+    messCode: ADMIN_MESS,
+    upiId: upiId.value,
+    updatedAt: new Date()
+  }
+);
+
+
+  alert("UPI details saved ✅");
+  showSection("upi");
+};
+
+
+// 🔹 MONTH DATE RANGE (IMPORTANT FIX)
+function getMonthRange(month){
+  const start = month + "-01";
+
+  const [year, m] = month.split("-");
+  const lastDay = new Date(year, m, 0).getDate();
+
+  const end = month + "-" + String(lastDay).padStart(2,"0");
+
+  return { start, end };
+}
+
+
+/* GENERATE BILLS */
+window.generateBills = async () => {
+
+  if (!billMonth.value) {
+    alert("Select month");
+    return;
+  }
+
+  // 1️⃣ Get billing prices
+  const priceSnap = await getDoc(doc(db, "billing_settings", ADMIN_MESS));
+  if (!priceSnap.exists()) {
+    alert("Set prices first");
+    return;
+  }
+  const p = priceSnap.data();
+
+  // 2️⃣ Get attendance of selected month
+  const { start, end } = getMonthRange(billMonth.value);
+
+const q = query(
+  collection(db, "attendance"),
+  where("messCode", "==", ADMIN_MESS),
+  where("date", ">=", start),
+  where("date", "<=", end)
+);
+
+
+  const snap = await getDocs(q);
+  console.log("Attendance found:", snap.size);
+  const map = {};
+
+for (const d of snap.docs) {
+  const a = d.data();
+
+  // 🔥 student info students collection मधून घे
+  if (!map[a.uid]) {
+    const stuSnap = await getDoc(doc(db, "students", a.uid));
+    const stu = stuSnap.data();
+
+    map[a.uid] = {
+      uid: a.uid,
+      name: stu?.fullName || "Unknown",
+      email: stu?.email || "Unknown",
+      amount: 0
+    };
+  }
+
+  if (a.mealType === "lunch") {
+    map[a.uid].amount +=
+      a.plateType === "half" ? p.lunchHalf : p.lunchFull;
+  } else {
+    map[a.uid].amount +=
+      a.plateType === "half" ? p.dinnerHalf : p.dinnerFull;
+  }
+}
+
+
+  billTable.innerHTML = "";
+
+  // 3️⃣ Save bill + show status
+  for (const uid in map) {
+    const b = map[uid];
+    const billId = `${ADMIN_MESS}_${billMonth.value}_${uid}`;
+
+    const billRef = doc(db, "bills", billId);
+    const billSnap = await getDoc(billRef);
+
+    let status = "Unpaid";
+
+    if (!billSnap.exists()) {
+     await setDoc(billRef, {
+  uid: uid,
+  studentName: b.name || "Unknown",
+  studentEmail: b.email || "Unknown",
+  messCode: ADMIN_MESS,
+  month: billMonth.value,
+  amount: b.amount || 0,
+  paymentStatus: "Unpaid",
+  generatedAt: new Date()
+});
+
+    } else {
+      status = billSnap.data().paymentStatus;
+    }
+
+    billTable.innerHTML += `
+      <tr>
+        <td>${b.name}</td>
+        <td>${b.email}</td>
+        <td>₹ ${b.amount}</td>
+        <td>
+          <span class="badge ${status==="Paid"?"bg-success":"bg-danger"}">
+            ${status}
+          </span>
+        </td>
+        <td>
+          ${
+            status === "Unpaid"
+            ? `<button class="btn btn-sm btn-success"
+                 onclick="markPaid('${billId}')">
+                 Mark Paid
+               </button>`
+            : "-"
+          }
+        </td>
+      </tr>
+    `;
+  }
+    // 🔥 UPDATE MONTHLY COLLECTION
+calculateMonthlyCollection(billMonth.value);
+};
+
+window.markPaid = async (billId) => {
+  const ok = confirm("Mark this bill as PAID?");
+  if (!ok) return;
+
+  await setDoc(
+    doc(db, "bills", billId),
+    {
+      paymentStatus: "Paid",
+      paidAt: new Date()
+    },
+    { merge: true }
+  );
+
+  alert("Payment marked as PAID ✅");
+
+  generateBills(); // refresh table
+};
+
+async function calculateMonthlyCollection(month){
+  const q = query(
+    collection(db,"bills"),
+    where("messCode","==",ADMIN_MESS),
+    where("month","==",month),
+    where("paymentStatus","==","Paid")
+  );
+
+  const snap = await getDocs(q);
+
+  let total = 0;
+  snap.forEach(d=>{
+    total += d.data().amount;
+  });
+
+  document.getElementById("monthlyCollection").innerText =
+  "₹ " + total;
+
+document.getElementById("dashboardMonthlyCollection").innerText =
+  "₹ " + total;
+
+}
+
+
+/* LOGOUT 
+window.logout = async()=>{
+  await signOut(auth);
+  location.href="admin_login.html";
+};
+*/
+
+/* LOGOUT */
+
+async function loadMessages() {
+  const messageList = document.getElementById("messageList");
+  messageList.innerHTML = "";
+
+  const snap = await getDocs(collection(db, "messages"));
+
+  snap.forEach(docSnap => {
+    const d = docSnap.data();
+
+    messageList.innerHTML += `
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+
+          <div class="d-flex justify-content-between">
+            <h5 class="mb-1">${d.name}</h5>
+            <span class="badge ${
+              d.status === "pending" ? "bg-danger" : "bg-success"
+            }">
+              ${d.status}
+            </span>
+          </div>
+
+          <p class="text-muted mb-1">${d.email}</p>
+          <p><strong>Type:</strong> ${d.type}</p>
+          <p class="mt-2">${d.message}</p>
+
+          <button class="btn btn-sm btn-success"
+            onclick="markResolved('${docSnap.id}')">
+            ✔ Mark Resolved
+          </button>
+
+        </div>
+      </div>
+    `;
+  });
+}
+
+// 🔥 ADD THIS HERE (markResolved च्या वर)
+window.filterMessages = async () => {
+  const month = document.getElementById("filterMonth").value;
+  const date = document.getElementById("filterDate").value;
+
+  const snap = await getDocs(collection(db, "messages"));
+  const messageList = document.getElementById("messageList");
+  messageList.innerHTML = "";
+
+  snap.forEach(docSnap => {
+    const d = docSnap.data();
+    const msgDate = d.createdAt?.toDate();
+
+    if (!msgDate) return;
+
+    let show = true;
+
+    // Month filter
+    if (month) {
+      const [y, m] = month.split("-");
+      if (
+        msgDate.getFullYear() != y ||
+        msgDate.getMonth() + 1 != m
+      ) {
+        show = false;
+      }
+    }
+
+    // Date filter
+    if (date) {
+      const selected = new Date(date);
+      if (
+        msgDate.toDateString() !== selected.toDateString()
+      ) {
+        show = false;
+      }
+    }
+
+    if (show) {
+      messageList.innerHTML += `
+        <div class="card shadow-sm mb-3">
+          <div class="card-body">
+
+            <div class="d-flex justify-content-between">
+              <h5>${d.name}</h5>
+              <span class="badge ${
+                d.status === "pending" ? "bg-danger" : "bg-success"
+              }">${d.status}</span>
+            </div>
+
+            <p>${d.email}</p>
+
+            <span class="badge ${
+              d.type === "Complaint" ? "bg-warning text-dark" : "bg-info"
+            }">${d.type}</span>
+
+            <p class="mt-2">${d.message}</p>
+
+          </div>
+        </div>
+      `;
+    }
+  });
+};
+
+window.markResolved = async (id) => {
+  await updateDoc(doc(db, "messages", id), {
+    status: "resolved"
+  });
+
+  alert("Marked as resolved ✅");
+  loadMessages();
+};
+
+window.logout = async () => {
+  const ok = confirm("Are you sure you want to logout?");
+  if (!ok) return;
+
+  try {
+    await signOut(auth);
+
+    // 🔐 session clear
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // 🔁 redirect
+    // location.href = "admin_login.html";
+    location.replace("index.html");
+  } catch (err) {
+    alert("Logout failed: " + err.message);
+  }
+};
+
+// 🔴 CLOSE MESS
+window.closeMess = async () => {
+
+  const ok = confirm(
+    "Are you sure you want to close this mess?"
+  );
+
+  if (!ok) return;
+
+  try {
+
+    async function deleteByMess(collectionName) {
+      const q = query(
+        collection(db, collectionName),
+        where("messCode", "==", ADMIN_MESS)
+      );
+
+      const snap = await getDocs(q);
+
+      for (const document of snap.docs) {
+        await deleteDoc(document.ref);
+      }
+    }
+
+    await deleteByMess("students");
+    await deleteByMess("attendance");
+    await deleteByMess("bills");
+    await deleteByMess("payments");
+    await deleteByMess("menus");
+    await deleteByMess("billing_settings");
+    await deleteByMess("payment_settings");
+
+    await deleteDoc(doc(db, "admins", auth.currentUser.uid));
+
+    await deleteUser(auth.currentUser);
+
+    alert("Mess closed successfully ✅");
+
+    // location.replace("index.html");
+    location.replace("index.html");
+
+  } catch (error) {
+    alert("Error: " + error.message);
+  }
+};
+
+
+
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Student Registration | Smart Mess</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px 15px;
+            background: #f3faf6;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 420px;
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 18px;
+            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        /* ===== Icon ===== */
+        .icon {
+            width: 70px;
+            height: 70px;
+            background: #dcfce7;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            color: #22c55e;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            margin-top: 12px;
+            margin-bottom: 5px;
+        }
+
+        input {
+            width: 100%;
+            height: 42px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
+            font-size: 14px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #22c55e;
+        }
+
+        button {
+            width: 100%;
+            height: 45px;
+            margin-top: 22px;
+            border: none;
+            border-radius: 12px;
+            background: #22c55e;
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #16a34a;
+        }
+
+        .login-text {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .login-text a {
+            color: #22c55e;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .login-text a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="card">
+
+
+        <div class="icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+
+
+                <circle cx="11" cy="7" r="4" />
+
+
+                <path d="M4 21v-1a7 7 0 0 1 14 0v1" />
+
+
+                <line x1="19" y1="7" x2="19" y2="13" />
+                <line x1="16" y1="10" x2="22" y2="10" />
+
+            </svg>
+        </div>
+
+
+
+        <h2>Student Registration</h2>
+        <p class="subtitle">Create your account to get started</p>
+
+        <form>
+            <label>Full Name</label>
+            <input type="text" id="fullName" placeholder="Full Name" required>
+
+            <label>Student ID</label>
+            <input type="text" id="studentid" placeholder="Student ID" required>
+
+            <label>Email Address</label>
+            <input type="email" id="email" placeholder="Email" required>
+
+            <label>Mobile Number</label>
+            <input type="tel" id="mobile" placeholder="Mobile number" required>
+
+            <label>Room Number</label>
+            <input type="text" id="room" placeholder="A-101" required>
+
+            <label>Password</label>
+            <input type="password" id="password" placeholder="Enter password" required>
+
+            <label>Mess Code</label>
+            <input type="text" id="messCode" placeholder="Enter mess code" required>
+
+            <button type="submit">Register</button>
+        </form>
+
+        <p class="login-text">
+            Already have an account?
+            <a href="stu_login.html">Login here</a>
+        </p>
+
+    </div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword }
+            from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+        import {
+            getFirestore,
+            doc,
+            setDoc,
+            getDoc
+        } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+        window.addEventListener("pageshow", () => {
+            const form = document.querySelector("form");
+            if (form) form.reset();
+        });
+
+
+        //  Firebase Config (तुझाच project)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDkvK-s1RpsmoNjZLPGMnpsqLM_2Cjwiwc",
+            authDomain: "smartmess-66441.firebaseapp.com",
+            projectId: "smartmess-66441",
+            storageBucket: "smartmess-66441.firebasestorage.app",
+            messagingSenderId: "631180435734",
+            appId: "1:631180435734:web:39036217b263a05ad73037"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // 🔹 Form submit
+        const form = document.querySelector("form");
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const fullName = document.getElementById("fullName").value;
+            const studentId = document.getElementById("studentid").value;
+            const email = document.getElementById("email").value;
+            const phone = document.getElementById("mobile").value;
+            const room = document.getElementById("room").value;
+            const password = document.getElementById("password").value;
+           const messCode =document.getElementById("messCode").value.trim().toUpperCase();
+
+
+
+            try {
+                // 1️ Mess code exists check
+                const messRef = doc(db, "messes", messCode);
+                const messSnap = await getDoc(messRef);
+
+                if (!messSnap.exists()) {
+                    alert(" Invalid Mess Code");
+                    return;
+                }
+
+                // 2️ Firebase Auth register
+                const userCred = await createUserWithEmailAndPassword(
+                    auth,
+                    email,
+                    password
+                );
+
+                const studentUID = userCred.user.uid;
+
+                //3 Save student data
+                await setDoc(doc(db, "students", studentUID), {
+                    fullName,
+                    studentId,
+                    email,
+                    phone,
+                    room,
+                    messCode,
+                    role: "student",
+                    isActive: true,          // ✅ ADD THIS
+                    joinedAt: new Date(),    // ✅ ADD THIS
+                    createdAt: new Date()
+                });
+
+                alert(" Student Registered Successfully!");
+               window.location.href = "stu_login.html";
+
+
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+    </script>
+
+</body>
+
+</html>

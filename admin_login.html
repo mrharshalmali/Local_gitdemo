@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login</title>
+    <style>
+        * {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            margin: 0px;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+
+            align-items: center;
+            background: #f3faf6;
+        }
+
+        form {
+            width: 90%;
+            max-width: 430px;
+            height: auto;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            border-radius: 15px;
+            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        h1 {
+            align-self: center;
+            margin-top: 20px;
+            margin-bottom: 6px;
+        }
+
+        p {
+            align-self: center;
+            margin-top: 6px;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        label {
+            margin-left: 27px;
+        }
+
+        input,
+        button {
+            width: 85%;
+            padding: 14px;
+            margin: 10px auto;
+            margin-bottom: 20px;
+            border: 1px solid #cbd5e1;
+            border-radius: 14px;
+            font-size: 16px;
+            box-sizing: border-box;
+
+        }
+
+        input:focus {
+            outline: none;
+            border: 2px solid #2563EB;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+        }
+
+        button {
+
+            margin: 5px auto;
+            margin-bottom: 50px;
+            border-radius: 14px;
+            background-color: #2563EB;
+            color: white;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+
+        .icon-circle {
+            width: 80px;
+            height: 80px;
+            background-color: #DBEAFE;
+            /* light blue */
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            align-self: center;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        .admin-icon {
+            width: 40px;
+            height: 40px;
+            color: #2563EB;
+        }
+
+        .register-text {
+            align-self: center;
+            margin-bottom: 20px;
+        }
+
+        .register-text a {
+            color: #2563EB;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .register-text a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <form>
+        <div class="icon-circle">
+            <svg class="admin-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#2563EB"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+
+
+                <circle cx="12" cy="8" r="4" />
+
+
+                <path d="M6 20v-1a6 6 0 0 1 12 0v1" />
+            </svg>
+        </div>
+
+
+        <h1>Admin Login</h1>
+        <p>Access the admin dashboard</p>
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="Admin Email" required>
+
+
+        <label for="password">Password</label>
+        <input type="password" name="password" id="password" placeholder="Password" required>
+
+
+
+        <button type="submit">Login</button>
+
+       
+
+        <div class="register-text">
+            Don't have an account?
+            <a href="admin_regis.html">Register here</a>
+
+
+        </div>
+    </form>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail }
+            from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+        import { onAuthStateChanged }
+            from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDkvK-s1RpsmoNjZLPGMnpsqLM_2Cjwiwc",
+            authDomain: "smartmess-66441.firebaseapp.com",
+            projectId: "smartmess-66441",
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        const form = document.querySelector("form");
+
+
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                alert("Admin Login Successful ✅");
+                window.location.href = "menu.html";
+                // location.replace("menu.html");
+
+            }
+            catch (error) {
+                if (error.code === "auth/invalid-credential") {
+                    alert(" Email or password is incorrect");
+                }
+                else if (error.code === "auth/user-not-found") {
+                    alert(" Account not found. Please register");
+                }
+                else if (error.code === "auth/wrong-password") {
+                    alert(" Password is incorrect");
+                }
+                else {
+                    alert(" Login Failed: " + error.message);
+                }
+            }
+
+            // catch (error) {
+            //     alert(error.message);
+            // }
+        });
+
+        
+    </script>
+
+</body>
+
+</html>

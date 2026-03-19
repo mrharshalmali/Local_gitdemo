@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Login</title>
+    <style>
+        * {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            margin: 0px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #f3faf6;
+        }
+       
+
+        form {
+            width: 90%;
+            max-width: 430px;
+            height: auto;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            border-radius: 15px;
+            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.15);
+
+        }
+
+        label {
+            margin-left: 35px;
+        }
+
+        input {
+
+            width: 85%;
+            max-width: 350px;
+            height: 40px;
+            padding: 8px 12px;
+            margin: 10px auto;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 14px;
+            box-sizing: border-box;
+
+
+
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #22c55e;
+        }
+
+        h1 {
+            align-self: center;
+            margin-bottom: 15px;
+
+        }
+
+        p {
+            align-self: center;
+            margin-top: 1px;
+            margin-bottom: 35px;
+
+        }
+
+        #button {
+
+            width: 85%;
+            padding: 14px;
+            margin: 15px auto;
+            margin-bottom: 30px;
+            border-radius: 14px;
+            background: linear-gradient(to right, #22c55e, #16a34a);
+            color: white;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .icon-circle {
+            width: 80px;
+            height: 80px;
+            background-color: #dcfce7;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            align-self: center;
+            margin-bottom: 10px;
+            margin-top: 20px;
+        }
+
+        .user-icon {
+            width: 40px;
+            height: 40px;
+            color: #22c55e;
+        }
+
+        @media (max-width: 600px) {
+            form {
+                border-radius: 10px;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            p {
+                font-size: 14px;
+                text-align: center;
+                padding: 0 10px;
+            }
+
+            .icon-circle {
+                width: 70px;
+                height: 70px;
+            }
+
+            .user-icon {
+                width: 32px;
+                height: 32px;
+            }
+        }
+
+        .register-text {
+            align-self: center;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+
+        .register-text a {
+            color: #22c55e;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .register-text a:hover {
+            text-decoration: underline;
+        }
+
+
+    
+
+    </style>
+</head>
+
+<body>
+
+    
+   
+    <form>
+
+        <div class="icon-circle">
+            <svg class="user-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 12a5 5 0 100-10 5 5 0 000 10z
+               M4 20a8 8 0 0116 0" />
+            </svg>
+        </div>
+
+        <h1>Student Login</h1>
+        <p>Welcome back! Please login to continue</p>
+
+        <label for="email">Email Address</label>
+        <input type="email" placeholder="Email" id="email" name="Email" required>
+        <label for="password">Password</label>
+        <input type="password" placeholder="Password" id="password" name="Password" required>
+
+        <button type="submit" id="button">Login</button>
+        <p class="register-text">
+            Don't have an account?
+            <a href="student_regis.html">Register here</a>
+        </p>
+
+
+    </form>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword }
+            from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc }
+            from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDkvK-s1RpsmoNjZLPGMnpsqLM_2Cjwiwc",
+            authDomain: "smartmess-66441.firebaseapp.com",
+            projectId: "smartmess-66441",
+            storageBucket: "smartmess-66441.firebasestorage.app",
+            messagingSenderId: "631180435734",
+            appId: "1:631180435734:web:39036217b263a05ad73037"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const form = document.querySelector("form");
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const email = document.querySelector('input[type="email"]').value;
+            const password = document.querySelector('input[type="password"]').value;
+
+            try {
+                //  Firebase Auth Login
+                const userCred = await signInWithEmailAndPassword(auth, email, password);
+                const uid = userCred.user.uid;
+
+                //  Check student data
+                const studentRef = doc(db, "students", uid);
+                const studentSnap = await getDoc(studentRef);
+
+                if (!studentSnap.exists()) {
+                    alert(" Student record not found");
+                    return;
+                }
+
+                alert(" Student Login Successful");
+                // window.location.href = "student_dashboard.html";
+               window.location.href = "student_dashboard.html";
+                //  location.replace("student_dashboard.html");
+                
+                
+
+            }
+            catch (error) {
+                if (error.code === "auth/invalid-credential") {
+                    alert(" Email or password is incorrect");
+                }
+                else if (error.code === "auth/user-not-found") {
+                    alert(" Account not found. Please register");
+                }
+                else if (error.code === "auth/wrong-password") {
+                    alert(" Password is incorrect");
+                }
+                else {
+                    alert(" Login Failed: " + error.message);
+                }
+            }
+            // catch (error) {
+            //   alert(error.message);
+            // }
+
+        });
+    </script>
+
+
+
+
+</body>
+
+</html>
